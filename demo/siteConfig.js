@@ -18,7 +18,7 @@ module.exports = {
 
     // Used for App and Offline manifest e.g. Mobile Home Screen
     shortTitle: `Justin Palpant Blog`,
-    siteIcon: `favicon_128.png`,
+    siteIcon: `favicon.png`,
     backgroundColor: `#e9e9e9`,
     themeColor: `#15171A`,
 }
