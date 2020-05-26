@@ -2,46 +2,25 @@ const _ = require(`lodash`)
 const visit = require(`unist-util-visit`)
 const { createRemoteFileNode } = require(`gatsby-source-filesystem`)
 
-const getContext = (node, field) => node && node.context && node.context[field]
-
 module.exports = async ({
     htmlAst,
     htmlNode,
-    actions: { createNode },
+    actions: { createNode, getNode },
     createNodeId,
     store,
     cache,
     reporter,
 }, pluginOptions) => {
-    const featureImage = getContext(htmlNode, `feature_image`)
-    const url = getContext(htmlNode, `url`)
-    const slug = getContext(htmlNode, `slug`)
 
-    if (!featureImage) {
-        return htmlAst
-    }
+    const config = getNode(`gatsby-theme-try-ghost-config`)
+    const basePath = config && config.basePath || `/`
 
-    //let fileNode
-    //try {
-    //    fileNode = await createRemoteFileNode({
-    //        url: featureImage,
-    //        parentNodeId: htmlNode.id, //htmlNode.parent,
-    //        createNode,
-    //        createNodeId,
-    //        cache,
-    //        store,
-    //    })
-    //} catch (e){
-    //    reporter.warn(`Remote image failure.`)
-    //}
-
-    // if the file was created, attach the new node to the parent node
-    //if (fileNode) {
-    //    htmlNode.featureImage___NODE = fileNode.id
-    //}
+    const url = htmlNode && htmlNode.context && htmlNode.context.url
+    const slug = htmlNode && htmlNode.context && htmlNode.context.slug
+    reporter.info(`Node URL is ${url}`)
 
     if (!url && slug){
-        reporter.warn(`Expected url and slug not defined.`)
+        reporter.info(`Expected url and slug not defined.`)
         return htmlAst
     }
 
@@ -55,12 +34,33 @@ module.exports = async ({
         return htmlAst
     }
 
+    reporter.info(`CMS URL is ${cmsUrl}`)
+
     visit(htmlAst, { tagName: `img` }, (node) => {
+        // get all <img \> tags and their src property
         const src = node.properties && node.properties.src
-        //console.log(src)
-        //if (href && _.startsWith(href, cmsUrl)) {
-        //    node.properties.href = _.replace(href, cmsUrl ,`/`)
-        //}
+
+        // if the image source is an uploaded image at the Ghost CMS URL, download it
+        if (src && _.startsWith(src, cmsUrl)) {
+            reporter.info(`Source is ${src}`)
+
+            let fileNode
+            try {
+                // can't use await inside synchronous function. Will have to redo this.
+                // also, how to get the static URL to the saved image?
+                fileNode = await createRemoteFileNode({
+                    url: src,
+                    parentNodeId: node.id,
+                    createNode,
+                    createNodeId,
+                    cache,
+                    store,
+                })
+            } catch (e){
+                reporter.warn(`Remote image failure.`)
+                return
+            }
+        }
     })
 
     return htmlAst
