@@ -166,6 +166,10 @@ const getCollection = (data, collectionPath, selector = () => false) => {
 
 const getCollectionPaths = (ids, posts) => {
     const paths = {}
+
+    if(!ids) {
+        return paths
+    }
     ids.forEach((id) => {
         paths[id] = posts.find(({ node }) => node.id === id).node.collectionPath
     })
